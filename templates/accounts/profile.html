@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}My profile · QuizForge{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" class="rounded-circle me-3" width="64" height="64" alt="">
+                    {% else %}
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width:64px;height:64px;font-size:1.5rem;">
+                        {{ user.username|first|upper }}
+                    </div>
+                    {% endif %}
+                    <div>
+                        <h1 class="h4 mb-0">{{ user.username }}</h1>
+                        <span class="badge bg-primary">{{ profile.get_role_display }}</span>
+                    </div>
+                </div>
+                <dl class="row">
+                    <dt class="col-sm-3">Email</dt>
+                    <dd class="col-sm-9">{{ user.email|default:"—" }}</dd>
+                    <dt class="col-sm-3">Bio</dt>
+                    <dd class="col-sm-9">{{ profile.bio|default:"No bio yet."|linebreaksbr }}</dd>
+                    <dt class="col-sm-3">Member since</dt>
+                    <dd class="col-sm-9">{{ profile.created_at|date:"N j, Y" }}</dd>
+                </dl>
+                <a href="{% url 'accounts:profile-edit' %}" class="btn btn-outline-primary btn-sm">Edit profile</a>
+                <a href="{% url 'accounts:password-change' %}" class="btn btn-outline-secondary btn-sm">Change password</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
