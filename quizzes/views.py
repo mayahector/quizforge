@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
-from .models import Category, Quiz
+from .models import Category, Choice, Quiz, QuizAttempt
 
 
 def quiz_list(request):
@@ -30,11 +30,72 @@ def quiz_detail(request, slug):
     return render(request, "quizzes/quiz_detail.html", {"quiz": quiz})
 
 
+def _get_active_attempt(user, quiz):
+    """Return the learner's in-progress attempt for this quiz, expiring and
+    creating one as needed so there is always exactly one live attempt."""
+    attempt = (
+        QuizAttempt.objects.filter(
+            user=user, quiz=quiz, status=QuizAttempt.Status.IN_PROGRESS
+        )
+        .order_by("-started_at")
+        .first()
+    )
+    if attempt and attempt.is_expired:
+        attempt.finish()
+        attempt = None
+    if attempt is None:
+        attempt = QuizAttempt.objects.create(user=user, quiz=quiz)
+    return attempt
+
+
 @login_required
 def quiz_take(request, slug):
-    """Placeholder: the timed quiz-taking engine lands in the next commit."""
     quiz = get_object_or_404(Quiz, slug=slug, is_published=True)
-    return render(request, "quizzes/quiz_take_stub.html", {"quiz": quiz})
+    attempt = _get_active_attempt(request.user, quiz)
+
+    if request.method == "POST":
+        question_id = request.POST.get("question_id")
+        choice_id = request.POST.get("choice")
+        question = get_object_or_404(
+            quiz.questions, id=question_id
+        )
+        choice = None
+        if choice_id:
+            choice = get_object_or_404(Choice, id=choice_id, question=question)
+        attempt.answers.update_or_create(
+            question=question, defaults={"selected_choice": choice}
+        )
+        return redirect("quizzes:quiz-take", slug=quiz.slug)
+
+    if attempt.is_expired:
+        attempt.finish()
+        return redirect("quizzes:quiz-results", attempt_id=attempt.id)
+
+    question = attempt.next_unanswered_question()
+    if question is None:
+        attempt.finish()
+        return redirect("quizzes:quiz-results", attempt_id=attempt.id)
+
+    answered_count = len(attempt.answered_question_ids())
+    context = {
+        "quiz": quiz,
+        "attempt": attempt,
+        "question": question,
+        "answered_count": answered_count,
+        "total_questions": quiz.question_count,
+    }
+    return render(request, "quizzes/quiz_take.html", context)
+
+
+@login_required
+def quiz_results(request, attempt_id):
+    """Placeholder: the full results breakdown lands in the next commit."""
+    attempt = get_object_or_404(
+        QuizAttempt, id=attempt_id, user=request.user
+    )
+    return render(
+        request, "quizzes/quiz_results_stub.html", {"attempt": attempt}
+    )
 
 
 @login_required

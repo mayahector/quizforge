@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Choice, Question, Quiz
+from .models import Answer, Category, Choice, Question, Quiz, QuizAttempt
 
 
 class ChoiceInline(admin.TabularInline):
@@ -50,3 +50,35 @@ class QuestionAdmin(admin.ModelAdmin):
     list_display = ("__str__", "quiz", "order", "points")
     list_filter = ("quiz",)
     inlines = [ChoiceInline]
+
+
+class AnswerInline(admin.TabularInline):
+    model = Answer
+    extra = 0
+    readonly_fields = ("question", "selected_choice", "is_correct", "answered_at")
+    can_delete = False
+
+
+@admin.register(QuizAttempt)
+class QuizAttemptAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "quiz",
+        "status",
+        "score_percentage",
+        "passed",
+        "started_at",
+        "completed_at",
+    )
+    list_filter = ("status", "passed", "quiz")
+    search_fields = ("user__username", "quiz__title")
+    readonly_fields = (
+        "user",
+        "quiz",
+        "score",
+        "score_percentage",
+        "passed",
+        "started_at",
+        "completed_at",
+    )
+    inlines = [AnswerInline]

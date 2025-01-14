@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} · QuizForge{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h1 class="h4 mb-1">{{ quiz.title }}</h1>
+                <span class="text-muted small">Question {{ answered_count|add:1 }} of {{ total_questions }}</span>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-dark fs-6" id="quiz-timer" data-seconds-remaining="{{ attempt.seconds_remaining }}">--:--</span>
+            </div>
+        </div>
+        <div class="progress mb-4" style="height: 6px;">
+            <div class="progress-bar" role="progressbar"
+                 style="width: {% widthratio answered_count total_questions 100 %}%"></div>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-4">{{ question.text }}</h2>
+                <form method="post" id="answer-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="question_id" value="{{ question.id }}">
+                    {% for choice in question.choices.all %}
+                    <div class="form-check mb-2 p-2 border rounded">
+                        <input class="form-check-input" type="radio" name="choice"
+                               value="{{ choice.id }}" id="choice-{{ choice.id }}" required>
+                        <label class="form-check-label stretched-link-none w-100" for="choice-{{ choice.id }}">
+                            {{ choice.text }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary mt-3">
+                        {% if answered_count|add:1 == total_questions %}Submit final answer{% else %}Next question{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    (function () {
+        const timerEl = document.getElementById("quiz-timer");
+        let remaining = parseInt(timerEl.dataset.secondsRemaining, 10) || 0;
+
+        function render() {
+            const minutes = Math.floor(remaining / 60).toString().padStart(2, "0");
+            const seconds = (remaining % 60).toString().padStart(2, "0");
+            timerEl.textContent = `${minutes}:${seconds}`;
+        }
+
+        render();
+        const interval = setInterval(function () {
+            remaining -= 1;
+            if (remaining <= 0) {
+                clearInterval(interval);
+                render();
+                document.getElementById("answer-form").submit();
+                return;
+            }
+            render();
+        }, 1000);
+    })();
+</script>
+{% endblock %}
