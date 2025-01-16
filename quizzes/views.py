@@ -89,13 +89,31 @@ def quiz_take(request, slug):
 
 @login_required
 def quiz_results(request, attempt_id):
-    """Placeholder: the full results breakdown lands in the next commit."""
     attempt = get_object_or_404(
-        QuizAttempt, id=attempt_id, user=request.user
+        QuizAttempt.objects.select_related("quiz"),
+        id=attempt_id,
+        user=request.user,
     )
-    return render(
-        request, "quizzes/quiz_results_stub.html", {"attempt": attempt}
-    )
+    if attempt.status != QuizAttempt.Status.COMPLETED:
+        attempt.finish()
+
+    answers = attempt.answers.select_related(
+        "question", "selected_choice"
+    ).order_by("question__order", "question__id")
+    breakdown = [
+        {
+            "question": answer.question,
+            "selected_choice": answer.selected_choice,
+            "is_correct": answer.is_correct,
+            "correct_choice": answer.question.choices.filter(
+                is_correct=True
+            ).first(),
+        }
+        for answer in answers
+    ]
+
+    context = {"attempt": attempt, "breakdown": breakdown}
+    return render(request, "quizzes/quiz_results.html", context)
 
 
 @login_required
