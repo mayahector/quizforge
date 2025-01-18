@@ -2,5 +2,110 @@
 {% block title %}Dashboard · QuizForge{% endblock %}
 {% block content %}
 <h1 class="h3 mb-4">Your dashboard</h1>
-<p class="text-muted">Stats and attempt history coming soon.</p>
+
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+    <div class="col">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Quizzes completed</p>
+                <p class="display-6 mb-0">{{ stats.total_attempts|default:0 }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Average score</p>
+                <p class="display-6 mb-0">
+                    {% if stats.average_score %}{{ stats.average_score|floatformat:1 }}%{% else %}—{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Quizzes passed</p>
+                <p class="display-6 mb-0">{{ stats.passed_count|default:0 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if chart_labels %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h6 text-muted mb-3">Recent score trend</h2>
+        <canvas id="scoreChart" height="90"></canvas>
+    </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h2 class="h6 text-muted mb-3">Attempt history</h2>
+        {% if recent_attempts %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Score</th>
+                        <th>Result</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in recent_attempts %}
+                    <tr>
+                        <td><a href="{% url 'quizzes:quiz-detail' attempt.quiz.slug %}">{{ attempt.quiz.title }}</a></td>
+                        <td>{{ attempt.score_percentage|floatformat:1 }}%</td>
+                        <td>
+                            {% if attempt.passed %}
+                            <span class="badge bg-success">Passed</span>
+                            {% else %}
+                            <span class="badge bg-danger">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ attempt.completed_at|date:"N j, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">You haven't completed any quizzes yet — <a href="{% url 'quizzes:quiz-list' %}">browse the catalog</a> to get started.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if chart_labels %}
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_scores|json_script:"chart-scores" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    const labels = JSON.parse(document.getElementById("chart-labels").textContent);
+    const scores = JSON.parse(document.getElementById("chart-scores").textContent);
+    new Chart(document.getElementById("scoreChart"), {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Score (%)",
+                data: scores,
+                borderColor: "#0d6efd",
+                backgroundColor: "rgba(13, 110, 253, 0.15)",
+                tension: 0.3,
+                fill: true,
+            }],
+        },
+        options: {
+            scales: { y: { beginAtZero: true, max: 100 } },
+            plugins: { legend: { display: false } },
+        },
+    });
+</script>
+{% endif %}
 {% endblock %}

@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import Category, Choice, Quiz, QuizAttempt
@@ -118,7 +119,27 @@ def quiz_results(request, attempt_id):
 
 @login_required
 def dashboard(request):
-    return render(request, "quizzes/dashboard.html")
+    completed = QuizAttempt.objects.filter(
+        user=request.user, status=QuizAttempt.Status.COMPLETED
+    ).select_related("quiz")
+
+    stats = completed.aggregate(
+        total_attempts=Count("id"),
+        average_score=Avg("score_percentage"),
+        passed_count=Count("id", filter=Q(passed=True)),
+    )
+
+    recent = completed.order_by("-completed_at")[:10]
+    # Chart reads left-to-right chronologically, so reverse the recency order.
+    chart_history = list(recent)[::-1]
+
+    context = {
+        "stats": stats,
+        "recent_attempts": recent,
+        "chart_labels": [a.quiz.title for a in chart_history],
+        "chart_scores": [a.score_percentage for a in chart_history],
+    }
+    return render(request, "quizzes/dashboard.html", context)
 
 
 @login_required
