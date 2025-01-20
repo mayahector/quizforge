@@ -2,5 +2,41 @@
 {% block title %}Leaderboard · QuizForge{% endblock %}
 {% block content %}
 <h1 class="h3 mb-4">Leaderboard</h1>
-<p class="text-muted">Top scorers coming soon.</p>
+<p class="text-muted mb-4">
+    Ranked by average best score across every quiz you've completed —
+    retaking a quiz to farm attempts won't move you up.
+</p>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if rankings %}
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Learner</th>
+                        <th>Quizzes completed</th>
+                        <th>Average best score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in rankings %}
+                    <tr {% if entry.user == request.user %}class="table-primary"{% endif %}>
+                        <td>
+                            {% if entry.rank == 1 %}🥇{% elif entry.rank == 2 %}🥈{% elif entry.rank == 3 %}🥉{% else %}#{{ entry.rank }}{% endif %}
+                        </td>
+                        <td>{{ entry.user.username }}</td>
+                        <td>{{ entry.quizzes_completed }}</td>
+                        <td>{{ entry.average_score }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No completed quizzes yet — be the first on the board!</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
