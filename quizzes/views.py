@@ -1,11 +1,9 @@
-from collections import defaultdict
-
-from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import Category, Choice, Quiz, QuizAttempt
+from .services import compute_leaderboard
 
 
 def quiz_list(request):
@@ -147,45 +145,5 @@ def dashboard(request):
 
 @login_required
 def leaderboard(request):
-    """
-    Rank learners by their best score per quiz (so retakes can't be farmed
-    for volume) averaged across every quiz they've completed at least once.
-    """
-    completed = QuizAttempt.objects.filter(
-        status=QuizAttempt.Status.COMPLETED
-    ).values("user_id", "quiz_id", "score_percentage")
-
-    best_per_user_quiz = {}
-    for row in completed:
-        key = (row["user_id"], row["quiz_id"])
-        best = best_per_user_quiz.get(key)
-        if best is None or row["score_percentage"] > best:
-            best_per_user_quiz[key] = row["score_percentage"]
-
-    scores_by_user = defaultdict(list)
-    for (user_id, _quiz_id), score in best_per_user_quiz.items():
-        scores_by_user[user_id].append(score)
-
-    rankings = [
-        {
-            "user_id": user_id,
-            "quizzes_completed": len(scores),
-            "average_score": round(sum(scores) / len(scores), 1),
-        }
-        for user_id, scores in scores_by_user.items()
-    ]
-    rankings.sort(
-        key=lambda r: (-r["average_score"], -r["quizzes_completed"])
-    )
-    top_rankings = rankings[:20]
-
-    users = get_user_model().objects.in_bulk(
-        [r["user_id"] for r in top_rankings]
-    )
-    for position, entry in enumerate(top_rankings, start=1):
-        entry["rank"] = position
-        entry["user"] = users[entry["user_id"]]
-
-    return render(
-        request, "quizzes/leaderboard.html", {"rankings": top_rankings}
-    )
+    rankings = compute_leaderboard(limit=20)
+    return render(request, "quizzes/leaderboard.html", {"rankings": rankings})
