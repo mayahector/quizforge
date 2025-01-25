@@ -180,6 +180,9 @@ class QuizAttempt(models.Model):
         self.passed = self.score_percentage >= self.quiz.pass_percentage
         self.status = self.Status.COMPLETED
         self.completed_at = timezone.now()
+        # Read by the post_save handler in signals.py to fire the
+        # completion webhook exactly once, without a second DB query.
+        self._just_completed = True
         self.save()
 
 
