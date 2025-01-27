@@ -1,8 +1,25 @@
 {% extends "base.html" %}
 {% block title %}Quizzes · QuizForge{% endblock %}
 {% block content %}
+<div class="hero">
+    <h1 class="h2 mb-2">Sharpen your knowledge, one quiz at a time.</h1>
+    <p class="mb-3 opacity-75">
+        Timed, categorized quizzes with instant scoring, a personal
+        dashboard, and a leaderboard to compete on.
+    </p>
+    <div class="d-flex gap-4">
+        <div>
+            <div class="stat">{{ quizzes.count }}</div>
+            <div class="small opacity-75">Quizzes available</div>
+        </div>
+        <div>
+            <div class="stat">{{ categories.count }}</div>
+            <div class="small opacity-75">Categories</div>
+        </div>
+    </div>
+</div>
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">Available quizzes</h1>
+    <h2 class="h4 mb-0">Available quizzes</h2>
 </div>
 <div class="row">
     <div class="col-md-3 mb-4">
