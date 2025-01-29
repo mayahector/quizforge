@@ -1,3 +1,2 @@
-from django.contrib import admin
-
-# Register your models here.
+# The api app exposes read-only DRF endpoints over quizzes' models; there
+# are no API-only models here to register.
