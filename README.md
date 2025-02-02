@@ -98,4 +98,8 @@ and serve `quizforge.wsgi:application` with your WSGI server of choice
 
 GitHub Actions (`.github/workflows/ci.yml`) lints with flake8, checks for
 missing migrations, and runs the test suite on every push and pull request
-against `main`.
+against `master`.
+
+## License
+
+Released under the MIT License — see [LICENSE](LICENSE).
